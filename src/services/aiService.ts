@@ -18,7 +18,7 @@ const fileToGenerativePart = async (file: File): Promise<Part> => {
 export const detectPlaceholdersWithAI = async (apiKey: string, templateFile: File): Promise<any[]> => {
   if (!apiKey) throw new Error("API Key is required.");
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
   const prompt = `Analyze this document template. Identify all fields where a user would input data (e.g., dotted lines, empty spaces next to labels). Respond ONLY with a valid JSON array of objects. Each object must have this structure: { "name": "snake_case_name", "x": 0.15, "y": 0.22, "width": 0.50, "height": 0.05 }. Coordinates must be percentages of the image dimensions.`;
   const imagePart = await fileToGenerativePart(templateFile);
   const result = await model.generateContent([prompt, imagePart]);
