@@ -1,6 +1,26 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import JSZip from 'jszip';
 import { Template, Placeholder, DataRow } from '../types';
+
+// Helper function to wrap text to fit within a given width
+const wrapText = (text: string, width: number, font: PDFFont, fontSize: number): string[] => {
+  const words = text.split(' ');
+  let line = '';
+  const lines: string[] = [];
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+    if (testWidth > width && n > 0) {
+      lines.push(line.trim());
+      line = words[n] + ' ';
+    } else {
+      line = testLine;
+    }
+  }
+  lines.push(line.trim());
+  return lines;
+};
 
 export const generateAndDownloadZip = async (
   template: Template,
@@ -37,8 +57,25 @@ export const generateAndDownloadZip = async (
         const r = parseInt(colorHex.substring(0, 2), 16) / 255;
         const g = parseInt(colorHex.substring(2, 4), 16) / 255;
         const b = parseInt(colorHex.substring(4, 6), 16) / 255;
-        const y = pageHeight - placeholder.y - placeholder.fontSize;
-        page.drawText(text, { x: placeholder.x, y, font, size: placeholder.fontSize, color: rgb(r, g, b) });
+
+        const lines = wrapText(text, placeholder.width, font, placeholder.fontSize);
+        
+        // CORRECTED Y-COORDINATE CALCULATION
+        // This new formula aligns the text to the TOP of the placeholder box.
+        let y = pageHeight - placeholder.y - placeholder.fontSize;
+
+        for (const line of lines) {
+          page.drawText(line, {
+            x: placeholder.x,
+            y,
+            font,
+            size: placeholder.fontSize,
+            color: rgb(r, g, b),
+            lineHeight: placeholder.fontSize * 1.2,
+          });
+          // Move down for the next line
+          y -= placeholder.fontSize * 1.2;
+        }
       }
 
       const pdfBytes = await pdfDoc.save();
